@@ -10,7 +10,7 @@ module dapp::aptos_discover {
     use aptos_framework::account;
     use aptos_framework::account::{SignerCapability, create_resource_address, create_signer_with_capability};
     use aptos_framework::object;
-    use aptos_framework::object::{disable_ungated_transfer, DeleteRef};
+    use aptos_framework::object::{disable_ungated_transfer, DeleteRef, is_owner};
     use aptos_framework::primary_fungible_store::{create_primary_store_enabled_fungible_asset, deposit};
     use aptos_framework::resource_account::create_resource_account;
     use aptos_framework::fungible_asset;
@@ -18,6 +18,7 @@ module dapp::aptos_discover {
     use aptos_framework::function_info;
     use aptos_framework::fungible_asset::Metadata;
     use aptos_framework::primary_fungible_store;
+    use aptos_framework::timestamp;
     #[test_only]
     use aptos_framework::object::ObjectCore;
 
@@ -27,8 +28,9 @@ module dapp::aptos_discover {
     const No_question_set:u64=1;
     const Not_exist_problem_set :u64 = 2;
     const No_this_image :u64 = 3;
+    const Not_owner : u64 =4;
 
-    struct Resource_store_object has key {
+    struct Resource_store_object has key,drop {
         object:address
     }
     struct ChainMark_Object_cap has key , store {
@@ -41,7 +43,7 @@ module dapp::aptos_discover {
         trans_cap  : fungible_asset::TransferRef
     }
 
-    struct Object_cap has key , store {
+    struct Object_cap has key ,drop, store {
         trans_cap : object::TransferRef,
         del_cap : object::DeleteRef,
        exten_cap : object::ExtendRef
@@ -107,10 +109,33 @@ module dapp::aptos_discover {
         };
         return new_vector
     }
+    #[view]
+    public fun check_object_cap(caller:address):bool{
+        exists<Object_cap>(caller)
+    }
 
     // for Organization
 
-    public entry fun create_problem_set (caller:&signer,problem1:string::String,date1:string::String,descibe:string::String,name_of_Organization:string::String,image_vector:vector<string::String>,reward_budget:u64) acquires  ResourceCap {
+    public entry fun del_object_owner (caller:&signer) acquires Object_cap {
+        // let object_cap = &borrow_global<Object_cap>(signer::address_of(caller)).del_cap;
+        // debug::print(&utf8(b"exist object cap"));
+        // debug::print(&exists<Object_cap>(signer::address_of(caller)));
+        let  Object_cap { trans_cap,del_cap,exten_cap } = move_from<Object_cap>(signer::address_of(caller));
+        // debug::print(&utf8(b"exist object cap"));
+        // debug::print(&object_cap);
+        object::delete(del_cap);
+    }
+    public entry fun transfer_object_owner (caller:&signer,to:address) acquires  Object_cap{
+
+
+        let  Object_cap { trans_cap,del_cap,exten_cap } = move_from<Object_cap>(signer::address_of(caller));
+        let liner_transfer = object::generate_linear_transfer_ref(&trans_cap);
+        object::transfer_with_ref(liner_transfer,to);
+        move_to(caller,Object_cap{
+            trans_cap,del_cap,exten_cap
+        })
+    }
+    public entry fun create_problem_set (caller:&signer,problem1:string::String,date1:string::String,descibe:string::String,name_of_Organization:string::String,image_vector:vector<string::String>,reward_budget:u64) acquires ResourceCap, Resource_store_object {
         let new_organ = Organization{
             name:name_of_Organization,
             address:address_of(caller),
@@ -160,13 +185,19 @@ module dapp::aptos_discover {
             exten_cap:new_extent_ref,
         });
 
-        move_to(resouces_signer,Resource_store_object{object:address_of(object_signer)});
+
+        if(exists<Resource_store_object>(signer::address_of(resouces_signer))){
+            move_from<Resource_store_object>(signer::address_of(resouces_signer));
+            move_to(resouces_signer,Resource_store_object{object:address_of(object_signer)});
+        }else{
+            move_to(resouces_signer,Resource_store_object{object:address_of(object_signer)});
+        };
         move_to(object_signer,new_problem_set);
     }
 
     // for user
 
-    public entry fun answer_question(caller:&signer,image_url:string::String,answer1:bool,data1:string::String,problem_set_address:address) acquires Problem_set, ResourceCap {
+    public entry fun answer_question(caller:&signer,image_url:string::String,answer1:bool,data1:string::String,problem_set_address:address) acquires Problem_set, ResourceCap, ChainMark_FA_cap {
         let resource = &borrow_global<ResourceCap>(create_resource_address(&@dapp,Seed)).cap;
         let resource_signer = &create_signer_with_capability(resource);
         assert!(exists<Problem_set>(problem_set_address),Not_exist_problem_set);
@@ -189,7 +220,8 @@ module dapp::aptos_discover {
             smart_vector::push_back(&mut borrow.false_answer,new_user_anser);
             smart_vector::borrow_mut(&mut borrow.question,index).false_number =smart_vector::borrow_mut(&mut borrow.question,index).false_number+1;
             smart_vector::borrow_mut(&mut borrow.question,index).answer_number =smart_vector::borrow_mut(&mut borrow.question,index).answer_number+1;
-        }
+        };
+        increase_CHP(caller,resource_signer);
     }
 
     //logic
@@ -241,36 +273,46 @@ module dapp::aptos_discover {
             trans_cap:new_trans_ref,
             exten_cap:new_extent_ref,
         });
-        let deposit = function_info::new_function_info()
+        // let deposit = function_info::new_function_info()
     }
 
     //pay
 
-    fun increase_CHP (caller:&signer) acquires ChainMark_FA_cap, Resource_store_object {
-        let borrow = borrow_global<ChainMark_FA_cap>(create_resource_address(&@dapp,Seed));
-        let obj_address = borrow_global<Resource_store_object>(create_resource_address(&@dapp,Seed)).object;
+    fun increase_CHP (caller:&signer,resoures_signer:&signer) acquires ChainMark_FA_cap {
+
+        let obj_address = object::create_object_address(&create_resource_address(&@dapp,Seed),Seed);
+        let meta_data = object::address_to_object<Metadata>(obj_address);
+        //debug::print(&object::is_owner(meta_data,signer::address_of(caller)));
+
+        let borrow = borrow_global<ChainMark_FA_cap>(obj_address);
+        // let obj_address = borrow_global<Resource_store_object>(create_resource_address(&@dapp,Seed)).object;
         // let new_coin=fungible_asset::mint(&borrow.mint_cap,100000000);
-        primary_fungible_store::mint(&borrow.mint_cap,signer::address_of(caller),100000000);
-        let b=object::address_to_object<Metadata>(obj_address);
-        debug::print(&utf8(b"FA Balance"));
-        debug::print(& primary_fungible_store::balance(signer::address_of(caller),b));
+        assert!(is_owner(meta_data,create_resource_address(&@dapp,Seed)),Not_owner);
+        primary_fungible_store::mint(&borrow.mint_cap,create_resource_address(&@dapp,Seed),100000000);
+        primary_fungible_store::transfer(resoures_signer,meta_data,signer::address_of(caller),100000000)
+        //  debug::print(&utf8(b"caller CHC Balance"));
+        //  debug::print(& primary_fungible_store::balance(signer::address_of(caller),meta_data));
+        //
+        // debug::print(&utf8(b"user CHC Balance"));
+        // debug::print(& primary_fungible_store::balance(user1,meta_data));
 
         // let new_object = object::address_to_object<>(obj_address);
         //fungible_asset::deposit(caller);
         //primary_fungible_store::deposit(signer::address_of(caller),new_coin);
+
+
 
     }
 
 
     // test
     #[test(caller=@dapp,organisztion_signer=@0x4,user1=@0x789)]
-    fun test_init (caller:&signer,organisztion_signer:&signer,user1:&signer) acquires ResourceCap, Problem_set, Resource_store_object, ChainMark_FA_cap {
+    fun test_init (caller:&signer,organisztion_signer:&signer,user1:&signer) acquires ResourceCap, Problem_set, Resource_store_object, ChainMark_FA_cap, Object_cap {
         init_module(caller);
         let image_vector =vector::empty<string::String>();
         vector::push_back(&mut image_vector,utf8(b"aaa"));
         vector::push_back(&mut image_vector,utf8(b"bbb"));
         create_problem_set(organisztion_signer,utf8(b"solve image of A"),utf8(b"2024/09/22 - 2024/12/15"),utf8(b"help us mark  down the image isn't A , we will use it to tran AI "),utf8(b"Test Company"),image_vector,100000000);
-
         let address1 = borrow_global<Resource_store_object>(create_resource_address(&@dapp,Seed)).object;
         answer_question(user1,utf8(b"aaa"),true,utf8(b"2024/09/22"),address1);
         // let object_extend = &borrow_global<ChainMark_Object_cap>(create_resource_address(&@dapp,Seed)).exten_cap;
@@ -278,6 +320,35 @@ module dapp::aptos_discover {
         // debug::print(&object::address_to_object<ObjectCore>(address_of(object_signer)));
         // debug::print(borrow_global<Problem_set>(address1));
         // debug::print(&image_vector() );
-        increase_CHP(caller);
+
+        //increase_CHP(caller);
+        //withdraw_CHC(signer::address_of(caller),user1);
+
+
+
+        //del_object_owner(organisztion_signer);
+
+        let obj_address = object::create_object_address(&create_resource_address(&@dapp,Seed),Seed);
+        let obj_metadata = object::address_to_object<Metadata>(obj_address);
+
+        // debug::print(&utf8(b"caller CHC Balance"));
+        // debug::print(& primary_fungible_store::balance(signer::address_of(caller),obj_metadata));
+        //
+        // debug::print(&utf8(b"user CHC Balance"));
+        // debug::print(& primary_fungible_store::balance(signer::address_of(user1),obj_metadata));
+    }
+
+    #[test_only]
+    fun withdraw_CHC (caller:address,user:&signer){
+        let obj_address = object::create_object_address(&create_resource_address(&@dapp,Seed),Seed);
+        let obj_metadata = object::address_to_object<Metadata>(obj_address);
+        let withdraw1= primary_fungible_store::withdraw(user,obj_metadata,10000000);
+        primary_fungible_store::deposit(caller,withdraw1);
+
+        debug::print(&utf8(b"caller CHC Balance"));
+        debug::print(& primary_fungible_store::balance(caller,obj_metadata));
+
+        debug::print(&utf8(b"user CHC Balance"));
+        debug::print(& primary_fungible_store::balance(signer::address_of(user),obj_metadata));
     }
 }
