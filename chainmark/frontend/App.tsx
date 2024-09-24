@@ -7,8 +7,8 @@ import { createStyles } from 'antd-style';
 import { AntDesignOutlined } from '@ant-design/icons';
 import {SetStateAction, useEffect, useState} from "react";
 import {Aptos, AptosConfig, Network} from "@aptos-labs/ts-sdk";
-import Modal from "@mui/material/Modal";
-import {Box} from "@mui/material";
+// import Modal from "@mui/material/Modal";
+// import {Box} from "@mui/material";
 const { TextArea } = Input;
 
 const aptosConfig = new AptosConfig({ network: Network.TESTNET});
@@ -54,7 +54,7 @@ function App() {
     const { styles } = useStyle();
     const [object_address,set_object_address]=useState('');
     const [now_show_image,set_now_show_image]=useState('');
-    const [wait_box_stats,set_wait_box_stats]=useState(true);
+    // const [wait_box_stats,set_wait_box_stats]=useState(true);
     const [owner_name ,set_owner_name ]=useState({address:'',name:'',
         organization_discribe:''})
     const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -72,9 +72,9 @@ function App() {
         // console.log('get random ', user_image_set[1])
         return user_image_set[randomIndex];
     };
-    const close_box = () =>{
-        set_wait_box_stats(false)
-    }
+    // const close_box = () =>{
+    //     set_wait_box_stats(false)
+    // }
 
     const submit_transcction = async () => {
         if (!account) return [];
@@ -95,7 +95,7 @@ function App() {
             // sign and submit transaction to chain
 
             const response = await signAndSubmitTransaction(transaction);
-            set_wait_box_stats(true)
+            //set_wait_box_stats(true)
             // wait for transaction
             const transaction_1 = await aptos.waitForTransaction({transactionHash: response.hash});
             const link = `https://explorer.aptoslabs.com/txn/${transaction_1.hash}?network=testnet`;
@@ -327,33 +327,33 @@ function App() {
         )}
 
 
-                <Modal
-                    disableEnforceFocus
-                    disableAutoFocus
-                    open={wait_box_stats}
-                    onClose={close_box}
-                    aria-labelledby="modal-modal-title"
-                    aria-describedby="modal-modal-description"
-                    classes={""}
-                    sx={{borderRadius: 60,p:4,border:"white",'&:fouvu':{outline:'none'}}}
-                >
-                    <Box sx={{
-                        position: 'absolute' as 'absolute',
+                {/*<Modal*/}
+                {/*    disableEnforceFocus*/}
+                {/*    disableAutoFocus*/}
+                {/*    open={wait_box_stats}*/}
+                {/*    onClose={close_box}*/}
+                {/*    aria-labelledby="modal-modal-title"*/}
+                {/*    aria-describedby="modal-modal-description"*/}
+                {/*    classes={""}*/}
+                {/*    sx={{borderRadius: 60,p:4,border:"white",'&:fouvu':{outline:'none'}}}*/}
+                {/*>*/}
+                {/*    <Box sx={{*/}
+                {/*        position: 'absolute' as 'absolute',*/}
 
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: 600,
-                        borderRadius: 10,
-                        backgroundColor:"#dfdace",
-                        height:"auto",
-                        boxShadow: 2,
-                        p: 4,
-                    }}>
+                {/*        top: '50%',*/}
+                {/*        left: '50%',*/}
+                {/*        transform: 'translate(-50%, -50%)',*/}
+                {/*        width: 600,*/}
+                {/*        borderRadius: 10,*/}
+                {/*        backgroundColor:"#dfdace",*/}
+                {/*        height:"auto",*/}
+                {/*        boxShadow: 2,*/}
+                {/*        p: 4,*/}
+                {/*    }}>*/}
 
-                    </Box>
+                {/*    </Box>*/}
 
-                </Modal>
+                {/*</Modal>*/}
       </div>
     </>
   );
