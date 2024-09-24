@@ -1,0 +1,16 @@
+[package]
+name = "aptos_discover"
+version = "1.0.0"
+authors = []
+
+[addresses]
+dapp='0x28bc71ad9d3a098d1bbaab0ccb3bd1beb8d02652566858538f9a62fac02a96fe'
+[dev-addresses]
+
+[dependencies.AptosFramework]
+git = "https://github.com/aptos-labs/aptos-core.git"
+rev = "mainnet"
+subdir = "aptos-move/framework/aptos-framework"
+
+
+[dev-dependencies]
