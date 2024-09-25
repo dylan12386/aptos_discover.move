@@ -8,7 +8,7 @@ export function Header() {
 
           <h1 className="display">Chain Mark</h1>
 
-            <Image  className="display" fallback={"https://github.com/dylan12386/aptos_discover/blob/main/ChainMARK.jpeg?raw=true"} style={{width:"20%",height:"20%",position:"relative",top:0,right:"80%",zIndex:-1}}></Image>
+            <Image preview={false} className="display" fallback={"https://github.com/dylan12386/aptos_discover/blob/main/ChainMARK.jpeg?raw=true"} style={{width:"20%",height:"20%",position:"relative",top:0,right:"80%",zIndex:-1}}></Image>
           <div className="flex gap-2 items-center flex-wrap">
             <WalletSelector />
           </div>

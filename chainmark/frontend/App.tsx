@@ -86,7 +86,7 @@ function App() {
         if(lines.length == 0){message.error('Enter Data set');return []};
         const transaction: InputTransactionData = {
             data: {
-                function: "0x28bc71ad9d3a098d1bbaab0ccb3bd1beb8d02652566858538f9a62fac02a96fe::aptos_discover::create_problem_set" as `${string}::${string}::${string}`,
+                function: "0x66cd3cc5d2d724d9eacc30a35cf61aef36c0fe69bc1c7ecb9444cae9a39aecd2::aptos_discover::create_problem_set" as `${string}::${string}::${string}`,
                 typeArguments: [],
                 functionArguments: [problem_describe, date, organiszation_details, organisztion_name, lines, (parseFloat(reward) * 100000000)]
             }
@@ -119,7 +119,7 @@ function App() {
         const dateString = `${year}${month}${day}`;
         const transaction: InputTransactionData = {
             data: {
-                function: "0x28bc71ad9d3a098d1bbaab0ccb3bd1beb8d02652566858538f9a62fac02a96fe::aptos_discover::answer_question" as `${string}::${string}::${string}`,
+                function: "0x66cd3cc5d2d724d9eacc30a35cf61aef36c0fe69bc1c7ecb9444cae9a39aecd2::aptos_discover::answer_question" as `${string}::${string}::${string}`,
                 typeArguments: [],
                 functionArguments: [now_show_image,key,dateString,object_address]
             }
@@ -156,23 +156,16 @@ function App() {
             method: 'GET',
             headers: {accept: 'application/json', 'X-API-KEY': 'MjOHhhAn71CQcgmgY6nfaHt1YywmMKFw'}
         };
-        fetch('https://aptos-testnet.nodit.io/v1/accounts/0xb9d3070c47c85249de919b8768165bbd20a78337f9fbc36e81dc0ded06d50fe1/resource/0x28bc71ad9d3a098d1bbaab0ccb3bd1beb8d02652566858538f9a62fac02a96fe::aptos_discover::Problem_set', options)
-            .then(response => response.json())
-            .then(response =>{
-                set_owner_name(response.data.owner)
-                // const imgUrlSet = response.data.question.inline_vec;
-                // const userImageSet =imgUrlSet.map(item => item.img_url_set);
-                // set_user_image_set(userImageSet)
 
-            } )
-            .catch(err => console.error(err));
 
         try {
             let view_image = await  aptos.view({payload:{
-                    function:"0x28bc71ad9d3a098d1bbaab0ccb3bd1beb8d02652566858538f9a62fac02a96fe::aptos_discover::image_vector",
+                    function:"0x66cd3cc5d2d724d9eacc30a35cf61aef36c0fe69bc1c7ecb9444cae9a39aecd2::aptos_discover::image_vector",
                     typeArguments:[],
                     functionArguments:[]
                 }})
+
+
             //console.log(view_image)
             //let new_vector= [] as string[];
             for(let i =0; i < view_image.length;i++){
@@ -190,10 +183,24 @@ function App() {
 
         try{
             let new_object_address = await aptos.view({payload:{
-                    function:"0x28bc71ad9d3a098d1bbaab0ccb3bd1beb8d02652566858538f9a62fac02a96fe::aptos_discover::tell_object_address",
+                    function:"0x66cd3cc5d2d724d9eacc30a35cf61aef36c0fe69bc1c7ecb9444cae9a39aecd2::aptos_discover::tell_object_address",
                     typeArguments:[],
                     functionArguments:[]
                 }})
+
+            console.log('new object address',new_object_address[0])
+
+            fetch(`https://aptos-testnet.nodit.io/v1/accounts/${new_object_address[0]}/resource/0x66cd3cc5d2d724d9eacc30a35cf61aef36c0fe69bc1c7ecb9444cae9a39aecd2::aptos_discover::Problem_set`, options)
+                .then(response => response.json())
+                .then(response =>{
+                    set_owner_name(response.data.owner)
+                    // const imgUrlSet = response.data.question.inline_vec;
+                    // const userImageSet =imgUrlSet.map(item => item.img_url_set);
+                    // set_user_image_set(userImageSet)
+
+                } )
+                .catch(err => console.error(err));
+
             set_object_address(new_object_address[0] as  string)
             //console.log(new_object_address[0])
         }catch(error:any){
