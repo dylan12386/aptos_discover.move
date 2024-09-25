@@ -10,7 +10,7 @@ module dapp::aptos_discover {
     use aptos_framework::account;
     use aptos_framework::account::{SignerCapability, create_resource_address, create_signer_with_capability};
     use aptos_framework::object;
-    use aptos_framework::object::{disable_ungated_transfer, DeleteRef, is_owner};
+    use aptos_framework::object::{disable_ungated_transfer, DeleteRef, is_owner, ObjectCore};
     use aptos_framework::primary_fungible_store::{create_primary_store_enabled_fungible_asset, deposit};
     use aptos_framework::resource_account::create_resource_account;
     use aptos_framework::fungible_asset;
@@ -19,8 +19,9 @@ module dapp::aptos_discover {
     use aptos_framework::fungible_asset::Metadata;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::timestamp;
+
     #[test_only]
-    use aptos_framework::object::ObjectCore;
+    use aptos_framework::object_code_deployment;
 
     const Seed:vector<u8> = b"discover";
 
@@ -29,6 +30,9 @@ module dapp::aptos_discover {
     const Not_exist_problem_set :u64 = 2;
     const No_this_image :u64 = 3;
     const Not_owner : u64 =4;
+    const NOT_owner_or_admin : u64 =5;
+    const Not_admin:u64 =6;
+    const Not_allow_to_create : u64 = 7 ;
 
     struct Resource_store_object has key,drop {
         object:address
@@ -54,7 +58,7 @@ module dapp::aptos_discover {
         cap:SignerCapability
     }
     //owner of organiztion
-    struct Organization has key,store{
+    struct Organization has key,store,drop{
         name:string::String,
         address:address,
         organization_discribe:string::String
@@ -91,6 +95,12 @@ module dapp::aptos_discover {
         reward:u64,
     }
 
+    struct Order_by has key,drop {
+        organ_pre:address,
+        now_organ:Organization
+
+    }
+
     #[view]
     public fun tell_object_address():address acquires Resource_store_object {
         assert!(exists<Resource_store_object>(create_resource_address(&@dapp,Seed))==true,No_question_set);
@@ -116,31 +126,44 @@ module dapp::aptos_discover {
 
     // for Organization
 
-    public entry fun del_object_owner (caller:&signer) acquires Object_cap {
+    public entry fun del_object_owner (caller:&signer) acquires Object_cap,  Resource_store_object {
         // let object_cap = &borrow_global<Object_cap>(signer::address_of(caller)).del_cap;
         // debug::print(&utf8(b"exist object cap"));
         // debug::print(&exists<Object_cap>(signer::address_of(caller)));
-        let  Object_cap { trans_cap,del_cap,exten_cap } = move_from<Object_cap>(signer::address_of(caller));
+        let problem_set_object_address = borrow_global< Resource_store_object >(create_resource_address(&@dapp,Seed)).object;
+        let  Object_cap { trans_cap,del_cap,exten_cap } = move_from<Object_cap>(problem_set_object_address);
+        // let object_signer = &object::generate_signer_for_extending(&exten_cap);
+        //let borrow_problem_set = borrow_global<Problem_set>(signer::address_of(object_signer));
+        let object_core = object::address_to_object<ObjectCore>(problem_set_object_address);
+
+        assert!(object::is_owner(object_core,signer::address_of(caller)) == true || signer::address_of(caller) == @admin, NOT_owner_or_admin );
         // debug::print(&utf8(b"exist object cap"));
         // debug::print(&object_cap);
         object::delete(del_cap);
     }
-    public entry fun transfer_object_owner (caller:&signer,to:address) acquires  Object_cap{
-
-
+    public entry fun transfer_object_owner (caller:&signer,to:address) acquires Object_cap, Problem_set, Resource_store_object {
         let  Object_cap { trans_cap,del_cap,exten_cap } = move_from<Object_cap>(signer::address_of(caller));
+        let object_signer = &object::generate_signer_for_extending(&exten_cap);
+        let borrow_problem_set = borrow_global<Problem_set>(signer::address_of(object_signer));
+        let problem_set_object_address = borrow_global< Resource_store_object >(create_resource_address(&@dapp,Seed)).object;
+        let object_core = object::address_to_object<ObjectCore>(problem_set_object_address);
+        assert!( borrow_problem_set.owner.address == signer::address_of(caller) || signer::address_of(caller) == @admin, NOT_owner_or_admin );
         let liner_transfer = object::generate_linear_transfer_ref(&trans_cap);
-        object::transfer_with_ref(liner_transfer,to);
-        move_to(caller,Object_cap{
+
+        move_to(object_signer,Object_cap{
             trans_cap,del_cap,exten_cap
-        })
+        });
+        object::transfer_with_ref(liner_transfer,to);
     }
-    public entry fun create_problem_set (caller:&signer,problem1:string::String,date1:string::String,descibe:string::String,name_of_Organization:string::String,image_vector:vector<string::String>,reward_budget:u64) acquires ResourceCap, Resource_store_object {
+    public entry fun create_problem_set (caller:&signer,problem1:string::String,date1:string::String,descibe:string::String,name_of_Organization:string::String,image_vector:vector<string::String>,reward_budget:u64) acquires ResourceCap, Resource_store_object, Order_by {
+        let borrow = move_from<Order_by>(create_resource_address(&@dapp,Seed));
+        assert!(signer::address_of(caller) == borrow.organ_pre,Not_allow_to_create);
         let new_organ = Organization{
             name:name_of_Organization,
             address:address_of(caller),
             organization_discribe:descibe
         };
+
         let new_smart_vector =smart_vector::empty<Q_set>();
         let length = vector::length(&image_vector);
         let i=0;
@@ -193,6 +216,15 @@ module dapp::aptos_discover {
             move_to(resouces_signer,Resource_store_object{object:address_of(object_signer)});
         };
         move_to(object_signer,new_problem_set);
+        let new_organ1 = Organization{
+            name:name_of_Organization,
+            address:address_of(caller),
+            organization_discribe:descibe
+        };
+        move_to(resouces_signer,Order_by{
+            organ_pre:signer::address_of(caller),
+            now_organ:new_organ1
+        })
     }
 
     // for user
@@ -240,6 +272,14 @@ module dapp::aptos_discover {
         return index
     }
 
+    //admin
+
+    public entry fun order_by_new_org(caller:&signer,organ_address:address) acquires Order_by {
+        assert!(signer::address_of(caller) == @admin,Not_admin);
+        let borrow_oder = borrow_global_mut<Order_by>(create_resource_address(&@dapp,Seed));
+        borrow_oder.organ_pre = organ_address;
+    }
+
     fun init_module(caller:&signer) {
         let (resource_signer, resource_cap) = account::create_resource_account(
                     caller,
@@ -273,6 +313,14 @@ module dapp::aptos_discover {
             trans_cap:new_trans_ref,
             exten_cap:new_extent_ref,
         });
+        move_to(&resource_signer,Order_by{
+            organ_pre:@0x1,
+            now_organ:Organization{
+                name:utf8(b""),
+                address:@0x1,
+                organization_discribe:utf8(b"")
+            }
+        })
         // let deposit = function_info::new_function_info()
     }
 
@@ -306,13 +354,16 @@ module dapp::aptos_discover {
 
 
     // test
-    #[test(caller=@dapp,organisztion_signer=@0x4,user1=@0x789)]
-    fun test_init (caller:&signer,organisztion_signer:&signer,user1:&signer) acquires ResourceCap, Problem_set, Resource_store_object, ChainMark_FA_cap, Object_cap {
+    #[test(caller=@dapp,organisztion_signer=@0x4,user1=@0x789,admin=@admin)]
+    fun test_init (caller:&signer,organisztion_signer:&signer,user1:&signer,admin:&signer) acquires ResourceCap, Problem_set, Resource_store_object, ChainMark_FA_cap, Object_cap, Order_by {
         init_module(caller);
         let image_vector =vector::empty<string::String>();
         vector::push_back(&mut image_vector,utf8(b"aaa"));
         vector::push_back(&mut image_vector,utf8(b"bbb"));
+        order_by_new_org(admin,signer::address_of(organisztion_signer));
         create_problem_set(organisztion_signer,utf8(b"solve image of A"),utf8(b"2024/09/22 - 2024/12/15"),utf8(b"help us mark  down the image isn't A , we will use it to tran AI "),utf8(b"Test Company"),image_vector,100000000);
+
+        debug::print(borrow_global<Order_by>(create_resource_address(&@dapp,Seed)));
         let address1 = borrow_global<Resource_store_object>(create_resource_address(&@dapp,Seed)).object;
         answer_question(user1,utf8(b"aaa"),true,utf8(b"2024/09/22"),address1);
         // let object_extend = &borrow_global<ChainMark_Object_cap>(create_resource_address(&@dapp,Seed)).exten_cap;
@@ -326,8 +377,6 @@ module dapp::aptos_discover {
 
 
 
-        //del_object_owner(organisztion_signer);
-
         let obj_address = object::create_object_address(&create_resource_address(&@dapp,Seed),Seed);
         let obj_metadata = object::address_to_object<Metadata>(obj_address);
 
@@ -336,6 +385,39 @@ module dapp::aptos_discover {
         //
         // debug::print(&utf8(b"user CHC Balance"));
         // debug::print(& primary_fungible_store::balance(signer::address_of(user1),obj_metadata));
+
+        let  Object_cap { trans_cap,del_cap,exten_cap } = move_from<Object_cap>(signer::address_of(organisztion_signer));
+        let object_signer = &object::generate_signer_for_extending(&exten_cap);
+        let new_obj = object::address_to_object<ObjectCore>(signer::address_of(object_signer));
+
+        debug::print(&utf8(b"Resources own"));
+        debug::print(&is_owner(new_obj,create_resource_address(&@dapp,Seed)));
+
+        debug::print(&utf8(b"Organization own"));
+        debug::print(&is_owner(new_obj,signer::address_of(organisztion_signer)));
+
+        debug::print(&utf8(b"User own"));
+        debug::print(&is_owner(new_obj,signer::address_of(user1)));
+
+        move_to(organisztion_signer,Object_cap{
+            trans_cap,del_cap,exten_cap
+        });
+
+        transfer_object_owner(organisztion_signer,signer::address_of(user1));
+
+        debug::print(&utf8(b"##################################"));
+        debug::print(&utf8(b"Resources own"));
+        debug::print(&is_owner(new_obj,create_resource_address(&@dapp,Seed)));
+
+        debug::print(&utf8(b"Organization own"));
+        debug::print(&is_owner(new_obj,signer::address_of(organisztion_signer)));
+
+        debug::print(&utf8(b"User own"));
+        debug::print(&is_owner(new_obj,signer::address_of(user1)));
+
+
+
+        del_object_owner(user1);
     }
 
     #[test_only]
