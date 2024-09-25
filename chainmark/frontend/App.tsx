@@ -7,6 +7,7 @@ import { createStyles } from 'antd-style';
 import { AntDesignOutlined } from '@ant-design/icons';
 import {SetStateAction, useEffect, useState} from "react";
 import {Aptos, AptosConfig, Network} from "@aptos-labs/ts-sdk";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 // import Modal from "@mui/material/Modal";
 // import {Box} from "@mui/material";
 const { TextArea } = Input;
@@ -225,6 +226,7 @@ function App() {
     // @ts-ignore
     return (
         <>
+            <SpeedInsights/>
             <Header/>
             <div className="flex items-center justify-center flex-col">
                 {connected ? (
