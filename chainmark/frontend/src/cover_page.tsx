@@ -83,32 +83,77 @@ const Cover_page:React.FC <{background_image_url:string|undefined}>=({background
                             alignSelf: "start",
                         }}>
 
-                            <Grid container spacing={2} sx={{borderRadius: 5, zIndex: 2, paddingTop: 2}}>
-                                <Grid size={4} sx={{backgroundColor: "rgba(200,200,200,0.16)", borderRadius: 1,}}>
+                            <Grid container spacing={2} sx={{borderRadius: 5, zIndex: 2, paddingTop: 0}}>
+                                <Grid size={4} sx={{}}>
                                     <motion.div className={"box"}
-                                                whileHover={{scale: 1.03}}
-                                                whileTap={{scale: 0.95}}
-                                                transition={{type: "spring", stiffness: 400, damping: 25}}
+                                                style={{backgroundColor: menu_button.Home ? "rgb(18,18,18)" :"rgba(200,200,200,0.16)", borderRadius: 1,
+                                                    marginTop: "2vh",
+                                                    position: "relative", // 為了讓光圈相對於按鈕定位
+                                                    overflow: "hidden",   // 隱藏按鈕外部的光圈
+                                                    transition: "all 0.3s ease",
+                                                    boxShadow: menu_button.Home
+                                                        ? "0 0 15px rgba(255, 255, 255, 0.5)"
+                                                        : "none", // 控制光圈的陰影效果
+                                                }}
+                                                onMouseEnter={() => {
+                                                    set_menu_button({...menu_button,Home: true})
+                                                }}
+                                                onMouseLeave={() => {
+                                                    set_menu_button({...menu_button,Home: false})
+                                                }}
+                                                whileHover={{scale: 1.05}}
+                                                whileTap={{scale: 0.9}}
+                                                transition={{type: "spring", stiffness: 400, damping: 35}}
 
                                     >
                                         <Item sx={{color: "rgba(227,225,225,0.93)"}} >Home</Item>
                                     </motion.div>
                                 </Grid>
-                                <Grid size={4} sx={{backgroundColor: "rgba(200,200,200,0.16)", borderRadius: 1}}>
+                                <Grid size={4} sx={{}}>
                                     <motion.div className={"box"}
-                                                whileHover={{scale: 1.03}}
-                                                whileTap={{scale: 0.95}}
-                                                transition={{type: "spring", stiffness: 400, damping: 25}}
+                                                style={{backgroundColor: menu_button.about_us ? "rgb(18,18,18)" :"rgba(200,200,200,0.16)", borderRadius: 1,
+                                                    marginTop: "2vh",
+                                                    position: "relative", // 為了讓光圈相對於按鈕定位
+                                                    overflow: "hidden",   // 隱藏按鈕外部的光圈
+                                                    transition: "all 0.3s ease",
+                                                    boxShadow: menu_button.about_us
+                                                        ? "0 0 15px rgba(255, 255, 255, 0.5)"
+                                                        : "none", // 控制光圈的陰影效果
+                                                }}
+                                                onMouseEnter={() => {
+                                                    set_menu_button({...menu_button,about_us: true})
+                                                }}
+                                                onMouseLeave={() => {
+                                                    set_menu_button({...menu_button,about_us: false})
+                                                }}
+                                                whileHover={{scale: 1.05}}
+                                                whileTap={{scale: 0.9}}
+                                                transition={{type: "spring", stiffness: 400, damping: 35}}
 
                                     >
                                         <Item sx={{color: "rgba(227,225,225,0.96)"}}>About us</Item>
                                     </motion.div>
                                 </Grid>
-                                <Grid size={4} sx={{backgroundColor: "rgba(200,200,200,0.16)", borderRadius: 1}}>
+                                <Grid size={4} sx={{}}>
                                     <motion.div className={"box"}
-                                                whileHover={{scale: 1.03}}
-                                                whileTap={{scale: 0.95}}
-                                                transition={{type: "spring", stiffness: 400, damping: 25}}
+                                                style={{backgroundColor: menu_button.roadmap ? "rgb(18,18,18)" :  "rgba(200,200,200,0.16)", borderRadius: 1,
+                                                    marginTop: "2vh",
+                                                    position: "relative", // 為了讓光圈相對於按鈕定位
+                                                    overflow: "hidden",   // 隱藏按鈕外部的光圈
+                                                    transition: "all 0.3s ease",
+                                                    boxShadow: menu_button.roadmap
+                                                        ? "0 0 15px rgba(255, 255, 255, 0.5)"
+                                                        : "none", // 控制光圈的陰影效果
+                                                     }}
+                                                onMouseEnter={() => {
+                                                    set_menu_button({...menu_button,roadmap: true})
+                                                }}
+                                                onMouseLeave={() => {
+                                                    set_menu_button({...menu_button,roadmap: false})
+                                                }}
+                                                whileHover={{scale: 1.05}}
+                                                whileTap={{scale: 0.9}}
+                                                transition={{type: "spring", stiffness: 400, damping: 35}}
 
                                     >
                                         <Item sx={{color: "rgba(227,225,225,0.93)"}}>Roadmap</Item>
