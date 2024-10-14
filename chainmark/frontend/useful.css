@@ -1,0 +1,22 @@
+@keyframes rotateRainbow {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.rainbow-glow {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+
+    background: conic-gradient(from 0deg, red, orange, yellow, green, cyan, blue, purple); /* 彩虹漸變 */
+    opacity: 0.8; /* 光圈透明度 */
+    animation: rotateRainbow 2s linear infinite; /* 動畫效果 */
+    z-index: -1; /* 放在按鈕下方 */
+}
